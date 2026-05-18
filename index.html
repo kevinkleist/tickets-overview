@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meine Tickets</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #e0e0e0;
+            
+            /* Status Colors */
+            --status-open: #f39c12;
+            --status-progress: #3498db;
+            --status-done: #2ecc71;
+            --system-badge: #9b59b6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: var(--text-main);
+        }
+
+        /* Filter Section */
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+            flex: 1 1 auto;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: #fff;
+            border-color: var(--primary-color);
+        }
+
+        /* Tickets List */
+        .ticket-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ticket-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .ticket-title {
+            font-weight: bold;
+            font-size: 1rem;
+            margin: 0;
+            padding-right: 10px;
+        }
+
+        .ticket-id {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .ticket-category {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .badges-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* Dynamische Status-Farben */
+        .status-offen, .status-eingegangen, .status-bestellt { background-color: #fdf2e9; color: var(--status-open); }
+        .status-bearbeitung, .status-reinigung { background-color: #ebf5fb; color: var(--status-progress); }
+        .status-abgeschlossen, .status-geliefert { background-color: #eafaf1; color: var(--status-done); }
+        
+        .badge-system {
+            background-color: #f5eef8;
+            color: var(--system-badge);
+            border: 1px solid #d7bde2;
+        }
+
+        .no-tickets {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Meine Tickets</h2>
+
+    <div class="filter-container">
+        <button class="filter-btn active" data-filter="Alle">Alle</button>
+        <button class="filter-btn" data-filter="Störmeldung">Störmeldung</button>
+        <button class="filter-btn" data-filter="Sonderreinigung">Sonderreinigung</button>
+        <button class="filter-btn" data-filter="Büro-Equipment">Büro-Equipment</button>
+    </div>
+
+    <div class="ticket-list" id="ticketList">
+        </div>
+
+    <script>
+        // Mock-Daten für die Tickets
+        const tickets = [
+            { id: "REQ-001", title: "Drucker im 2. OG defekt", category: "Störmeldung", status: "Offen", targetSystem: "ServiceNow" },
+            { id: "REQ-002", title: "Kaffeemaschine läuft aus", category: "Störmeldung", status: "In Bearbeitung", targetSystem: "ServiceNow" },
+            { id: "REQ-003", title: "Teppichreinigung Konferenzraum A", category: "Sonderreinigung", status: "Eingegangen", targetSystem: "Backend-Service" },
+            { id: "REQ-004", title: "Fensterreinigung Chefetage", category: "Sonderreinigung", status: "Reinigung läuft", targetSystem: "Backend-Service" },
+            { id: "REQ-005", title: "WLAN-Ausfall Kantine", category: "Störmeldung", status: "Abgeschlossen", targetSystem: "ServiceNow" },
+            { id: "REQ-006", title: "Neuer Monitor (27 Zoll)", category: "Büro-Equipment", status: "Bestellt", targetSystem: "IT-Portal" },
+            { id: "REQ-007", title: "Tiefenreinigung Empfang", category: "Sonderreinigung", status: "Abgeschlossen", targetSystem: "Backend-Service" },
+            { id: "REQ-008", title: "Ergonomische Maus", category: "Büro-Equipment", status: "Geliefert", targetSystem: "IT-Portal" }
+        ];
+
+        // Hilfsfunktion zur Generierung der CSS-Klasse für den Status
+        function getStatusClass(status) {
+            if (status.includes("Offen") || status.includes("Eingegangen") || status.includes("Bestellt")) return "status-offen";
+            if (status.includes("Bearbeitung") || status.includes("läuft")) return "status-bearbeitung";
+            if (status.includes("Abgeschlossen") || status.includes("Geliefert")) return "status-abgeschlossen";
+            return "";
+        }
+
+        // Funktion zum Rendern der Tickets
+        function renderTickets(filter = "Alle") {
+            const listContainer = document.getElementById('ticketList');
+            listContainer.innerHTML = ""; // Liste leeren
+
+            const filteredTickets = filter === "Alle" 
+                ? tickets 
+                : tickets.filter(t => t.category === filter);
+
+            if (filteredTickets.length === 0) {
+                listContainer.innerHTML = `<div class="no-tickets">Keine Tickets für diese Kategorie gefunden.</div>`;
+                return;
+            }
+
+            filteredTickets.forEach(ticket => {
+                const statusClass = getStatusClass(ticket.status);
+                
+                const card = document.createElement('div');
+                card.className = 'ticket-card';
+                card.innerHTML = `
+                    <div class="ticket-header">
+                        <h3 class="ticket-title">${ticket.title}</h3>
+                        <span class="ticket-id">${ticket.id}</span>
+                    </div>
+                    <div class="ticket-category">${ticket.category}</div>
+                    <div class="badges-container">
+                        <span class="badge ${statusClass}">Status: ${ticket.status}</span>
+                        <span class="badge badge-system">📍 ${ticket.targetSystem}</span>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        // Event-Listener für die Filter-Buttons einrichten
+        document.querySelectorAll('.filter-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                // Aktiven Zustand der Buttons ändern
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Tickets neu rendern
+                const filterValue = this.getAttribute('data-filter');
+                renderTickets(filterValue);
+            });
+        });
+
+        // Initiales Rendern (Alle Tickets)
+        renderTickets();
+    </script>
+</body>
+</html>
